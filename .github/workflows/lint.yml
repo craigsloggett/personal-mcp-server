@@ -1,0 +1,16 @@
+name: Lint
+
+on: pull_request
+
+jobs:
+  staticcheck:
+    name: Go
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+    - name: Lint Go Files
+      run: |-
+        make lint
