@@ -30,6 +30,36 @@ plugins:
     - type: chore
       scope: deps
       release: patch
+- - '@semantic-release/release-notes-generator'
+  - preset: conventionalCommits
+    presetConfig:
+      types:
+      - type: feat
+        section: Features
+      - type: fix
+        section: Fixes
+      - type: perf
+        section: Performance Enhancements
+      - type: revert
+        section: Revert Changes
+      - type: docs
+        section: Documentation
+      - type: style
+        section: Stylistic
+      - type: test
+        section: Testing
+      - type: build
+        section: Build System
+      - type: ci
+        section: CI
+      - type: chore
+        section: Chores
+      - type: chore
+        scope: deps
+        section: Dependency Updates
+      - type: major
+        section: Breaking Changes
 - '@semantic-release/git'
+- '@semantic-release/github'
 
 preset: conventionalcommits
