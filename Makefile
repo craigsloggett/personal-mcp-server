@@ -13,23 +13,22 @@ arch   := $(shell uname -m)
 vendor := $(shell cc -dumpmachine | awk -F- '{print $$2}')
 os     := $(shell uname|tr A-Z a-z)
 
+# Rust Tooling
+target_triple      := $(arch)-$(vendor)-$(os)
+rustup_package_url := https://static.rust-lang.org/rustup/archive/$(rustup_version)/$(target_triple)/rustup-init
+
 ifeq ($(arch),arm64)
   arch = aarch64
 endif
 
 .PHONY: all
-all: #format lint test
-	@printf '%s\n' "$(arch)-$(vendor)-$(os)"
+all: tools
 
 .PHONY: tools
-tools: $(CARGO_HOME)/bin/cargo rust
-
-# Setup rustup
-target_triple      := $(arch)-$(vendor)-$(os)
-rustup_package_url := https://static.rust-lang.org/rustup/archive/$(rustup_version)/$(target_triple)/rustup-init
-toolchain_sha256   := $(shell shasum -a 256 $(PWD)/rust-toolchain.toml | awk '{ print $$1 }')
+tools: $(CARGO_HOME)/bin/cargo
 
 $(BIN)/rustup-init:
+	@echo "Fetching rustup-init..."
 	@mkdir -p $(BIN)
 	@mkdir -p $(RUSTUP_HOME)
 	@curl --silent --show-error --fail --create-dirs --output-dir $(BIN) -O -L $(rustup_package_url)
@@ -37,28 +36,23 @@ $(BIN)/rustup-init:
 	@cd $(BIN) && shasum -a 256 -c $(BIN)/rustup-init.sha256 >/dev/null 
 	@chmod +x $(BIN)/rustup-init
 
-$(CACHE)/rust-toolchain.toml.sha256: rust-toolchain.toml
-	@echo "Capturing rust-toolchain.toml hash..."
-	@printf '%s' "$(toolchain_sha256)" > $(CACHE)/rust-toolchain.toml.sha256
-
-$(CARGO_HOME)/bin/cargo: $(BIN)/rustup-init $(CACHE)/rust-toolchain.toml.sha256
-	@echo "Initializing the rust toolchain..."
+$(CARGO_HOME)/bin/cargo: rust-toolchain.toml $(BIN)/rustup-init
+	@echo "Initializing the Rust toolchain..."
 	@rustup-init --default-toolchain none --no-modify-path -y >/dev/null 2>&1
 	@echo "Setting up Cargo..."
 	@rustup toolchain install >/dev/null 2>&1
+	@echo "Finished setting up Cargo:"
 	@rustc --version
 	@cargo --version
-
-.PHONY: rust
-rust: $(CACHE)/rust-toolchain.toml.sha256
-	@echo $(toolchain_sha256)
+	@# Update the target timestamp so its newer than rust-toolchain.toml.
+	@touch $@
 
 .PHONY: update
-update: $(BIN)/go
+update: tools
 	@echo "Updating dependencies..."
 
 .PHONY: build
-build: update
+build: tools
 	@echo "Building..."
 
 .PHONY: format
@@ -66,7 +60,7 @@ format: tools
 	@echo "Formatting..."
 
 .PHONY: lint
-lint: tools build
+lint: build
 	@echo "Linting..."
 
 .PHONY: test
