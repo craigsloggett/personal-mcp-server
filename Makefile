@@ -17,6 +17,11 @@ ifeq ($(arch),arm64)
 	arch = aarch64
 endif
 
+ifeq ($(vendor),linux)
+	vendor = unknown
+	os     = linux-gnu # TODO: Handle musl libc distributions.
+endif
+
 # Rust Tooling
 target_triple      := $(arch)-$(vendor)-$(os)
 rustup_package_url := https://static.rust-lang.org/rustup/archive/$(rustup_version)/$(target_triple)/rustup-init
