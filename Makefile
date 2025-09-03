@@ -1,100 +1,81 @@
-BIN           := $(PWD)/.local/bin
-CACHE         := $(PWD)/.local/cache
-GOPATH        := $(CACHE)/go
-PATH          := $(BIN):$(PATH)
-SHELL         := env PATH=$(PATH) GOPATH=$(GOPATH) /bin/sh
+BIN         := $(PWD)/.local/bin
+CACHE       := $(PWD)/.local/cache
+RUSTUP_HOME := $(CACHE)/rustup
+CARGO_HOME  := $(CACHE)/cargo
+PATH        := $(BIN):$(CARGO_HOME)/bin:/usr/bin:/bin
+SHELL       := env PATH=$(PATH) RUSTUP_HOME=$(RUSTUP_HOME) CARGO_HOME=$(CARGO_HOME) /bin/sh
 
 # Versions
-go_version          := 1.25.0
-staticcheck_version := 2025.1.1
+rustup_version := 1.28.2
 
-# Operating System and Architecture
-os ?= $(shell uname|tr A-Z a-z)
+# Architecture, Vendor, and Operating System
+arch   := $(shell uname -m)
+vendor := $(shell cc -dumpmachine | awk -F- '{print $$2}')
+os     := $(shell uname|tr A-Z a-z)
 
-ifeq ($(shell uname -m),x86_64)
-  arch   ?= amd64
+ifeq ($(arch),arm64)
+	arch = aarch64
 endif
-ifeq ($(shell uname -m),arm64)
-  arch     ?= arm64
+
+# TODO: Handle musl libc distributions.
+ifeq ($(vendor),linux)
+	vendor = unknown
+	os     = linux-gnu
 endif
+
+# Rust Tooling
+target_triple      := $(arch)-$(vendor)-$(os)
+rustup_package_url := https://static.rust-lang.org/rustup/archive/$(rustup_version)/$(target_triple)/rustup-init
 
 .PHONY: all
-all: format lint install docs test
+all: tools
 
 .PHONY: tools
-tools: $(BIN)/go $(BIN)/staticcheck
+tools: $(CARGO_HOME)/bin/cargo
 
-# Setup Go
-go_package_name := go$(go_version).$(os)-$(arch)
-go_package_url  := https://go.dev/dl/$(go_package_name).tar.gz
-go_install_path := $(BIN)/go-$(go_version)-$(os)-$(arch)
-
-$(BIN)/go:
+$(BIN)/rustup-init:
+	@echo "Fetching rustup-init from $(rustup_package_url)..."
 	@mkdir -p $(BIN)
-	@mkdir -p $(GOPATH)
-	@echo "Downloading Go v$(go_version) to $(go_install_path)..."
-	@curl --silent --show-error --fail --create-dirs --output-dir $(BIN) -O -L $(go_package_url)
-	@tar -C $(BIN) -xzf $(BIN)/$(go_package_name).tar.gz && rm $(BIN)/$(go_package_name).tar.gz
-	@mv $(BIN)/go $(go_install_path)
-	@ln -s $(go_install_path)/bin/go $(BIN)/go
+	@mkdir -p $(RUSTUP_HOME)
+	@curl --silent --show-error --fail --create-dirs --output-dir $(BIN) -O -L $(rustup_package_url)
+	@curl --silent --show-error --fail --create-dirs --output-dir $(BIN) -O -L $(rustup_package_url).sha256
+	@cd $(BIN) && shasum -a 256 -c $(BIN)/rustup-init.sha256 >/dev/null 
+	@chmod +x $(BIN)/rustup-init
 
-# Setup Staticcheck
-staticcheck_source_url   := https://github.com/dominikh/go-tools/archive/$(staticcheck_version).tar.gz
-staticcheck_install_path := $(BIN)/staticcheck-$(staticcheck_version)-$(os)-$(arch)
-
-$(BIN)/staticcheck:
-	@mkdir -p $(BIN)
-	@echo "Downloading Staticcheck v$(staticcheck_version) to $(staticcheck_install_path)..."
-	@curl --silent --show-error --fail --create-dirs --output-dir $(BIN) -O -L $(staticcheck_source_url)
-	@tar -C $(BIN) -xzf $(BIN)/$(staticcheck_version).tar.gz && rm $(BIN)/$(staticcheck_version).tar.gz
-	@cd $(BIN)/go-tools-$(staticcheck_version) && go build -o $(BIN)/staticcheck ./cmd/staticcheck && cd -
-	@rm -rf $(BIN)/go-tools-$(staticcheck_version) && mkdir -p $(staticcheck_install_path)
-	@mv $(BIN)/staticcheck $(staticcheck_install_path)
-	@ln -s $(staticcheck_install_path)/staticcheck $(BIN)/staticcheck
+$(CARGO_HOME)/bin/cargo: rust-toolchain.toml $(BIN)/rustup-init
+	@echo "Initializing the Rust toolchain..."
+	@rustup-init --default-toolchain none --no-modify-path -y >/dev/null 2>&1
+	@echo "Setting up Cargo..."
+	@rustup toolchain install >/dev/null 2>&1
+	@echo "Finished setting up Cargo:"
+	@rustc --version
+	@cargo --version
+	@# Update the target timestamp so its newer than rust-toolchain.toml.
+	@touch $@
 
 .PHONY: update
-update: $(BIN)/go
+update: tools
 	@echo "Updating dependencies..."
-	@go get -u
-	@go mod tidy
 
 .PHONY: build
-build: update
+build: tools
 	@echo "Building..."
-	@go build ./...
-
-.PHONY: install
-install: update
-	@echo "Installing provider..."
-	@go install ./...
 
 .PHONY: format
 format: tools
 	@echo "Formatting..."
-	@go fmt ./...
 
 .PHONY: lint
-lint: tools update
+lint: build
 	@echo "Linting..."
-	@staticcheck ./...
-
-.PHONY: docs
-docs: tools update install
-	@echo "Generating Docs..."
 
 .PHONY: test
-test: install
+test: build
 	@echo "Testing..."
-
-.PHONY: run
-run: install
-	@echo "Running..."
-	@go run .
 
 .PHONY: clean
 clean:
 	@echo "Removing the $(CACHE) directory..."
-	@go clean -modcache
 	@rm -rf $(CACHE)
 	@echo "Removing the $(BIN) directory..."
 	@rm -rf $(BIN)
