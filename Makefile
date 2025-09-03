@@ -17,9 +17,10 @@ ifeq ($(arch),arm64)
 	arch = aarch64
 endif
 
+# TODO: Handle musl libc distributions.
 ifeq ($(vendor),linux)
 	vendor = unknown
-	os     = linux-gnu # TODO: Handle musl libc distributions.
+	os     = linux-gnu
 endif
 
 # Rust Tooling
