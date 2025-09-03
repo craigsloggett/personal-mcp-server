@@ -13,13 +13,13 @@ arch   := $(shell uname -m)
 vendor := $(shell cc -dumpmachine | awk -F- '{print $$2}')
 os     := $(shell uname|tr A-Z a-z)
 
+ifeq ($(arch),arm64)
+	arch = aarch64
+endif
+
 # Rust Tooling
 target_triple      := $(arch)-$(vendor)-$(os)
 rustup_package_url := https://static.rust-lang.org/rustup/archive/$(rustup_version)/$(target_triple)/rustup-init
-
-ifeq ($(arch),arm64)
-  arch = aarch64
-endif
 
 .PHONY: all
 all: tools
@@ -28,7 +28,7 @@ all: tools
 tools: $(CARGO_HOME)/bin/cargo
 
 $(BIN)/rustup-init:
-	@echo "Fetching rustup-init..."
+	@echo "Fetching rustup-init from $(rustup_package_url)..."
 	@mkdir -p $(BIN)
 	@mkdir -p $(RUSTUP_HOME)
 	@curl --silent --show-error --fail --create-dirs --output-dir $(BIN) -O -L $(rustup_package_url)
