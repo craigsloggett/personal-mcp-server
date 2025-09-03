@@ -61,13 +61,26 @@ update: tools
 build: tools
 	@echo "Building..."
 
+.PHONY: run
+run: tools
+	@echo "Running..."
+	@cargo run
+
 .PHONY: format
 format: tools
 	@echo "Formatting..."
+	@cargo fmt
+
+.PHONY: fix
+fix: tools
+	@echo "Fix..."
+	@cargo fix
+	@cargo clippy --fix
 
 .PHONY: lint
-lint: build
+lint: tools
 	@echo "Linting..."
+	@cargo clippy
 
 .PHONY: test
 test: build
