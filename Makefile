@@ -75,7 +75,6 @@ format: tools
 fix: tools
 	@echo "Fix..."
 	@cargo fix
-	@cargo clippy --fix
 
 .PHONY: lint
 lint: tools
