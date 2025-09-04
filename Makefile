@@ -109,6 +109,8 @@ $(BIN)/rustup-init:
 
 .PHONY: clean
 clean:
+	@printf '%s\n' "Removing generated artifacts..."
+	@[ "$$(command -v cargo)" ] && cargo clean || true
 	@printf '%s\n' "Removing the $(CACHE) directory..."
 	@rm -rf $(CACHE)
 	@printf '%s\n' "Removing the $(BIN) directory..."
