@@ -1,12 +1,34 @@
-use std::io::{self, BufRead, Write};
+use std::cmp::Ordering;
+use std::io;
 
 fn main() {
-    let stdin = io::stdin();
-    let stdout = io::stdout();
-    let mut handle_out = stdout.lock();
+    println!("Guess the number!");
 
-    for line in stdin.lock().lines() {
-        let line = line.expect("Failed to read line");
-        writeln!(handle_out, "You said: {}", line).expect("Failed to write line");
+    let secret_number: u32 = 42;
+
+    loop {
+        println!("Please input your guess.");
+
+        let mut guess = String::new();
+
+        io::stdin()
+            .read_line(&mut guess)
+            .expect("Failed to read line");
+
+        let guess: u32 = match guess.trim().parse() {
+            Ok(num) => num,
+            Err(_) => continue,
+        };
+
+        println!("You guessed: {guess}");
+
+        match guess.cmp(&secret_number) {
+            Ordering::Less => println!("Too small!"),
+            Ordering::Greater => println!("Too big!"),
+            Ordering::Equal => {
+                println!("You win!");
+                break;
+            }
+        }
     }
 }
