@@ -33,19 +33,15 @@ target_triple      := $(arch)-$(vendor)-$(os)
 rustup_package_url := https://static.rust-lang.org/rustup/archive/$(rustup_version)/$(target_triple)/rustup-init
 
 .PHONY: all
-all: tools
+all: format lint release test audit
 
 .PHONY: tools
 tools: $(CARGO_HOME)/bin/cargo $(CARGO_HOME)/bin/cargo-audit $(CARGO_HOME)/bin/cargo-auditable
 
-.PHONY: audit
-audit: release $(CARGO_HOME)/bin/cargo-audit
-	@printf '%s\n' "Scanning the release binary for vulnerabilities..."
-	@cargo audit bin target/release/$(project_name)
-
-$(CARGO_HOME)/bin/cargo-audit: $(CARGO_HOME)/bin/cargo
-	@printf '%s\n' "Installing cargo-audit to scan source and binaries for security vulnerabilities..."
-	@cargo install cargo-audit --version $(cargo_audit_version) --locked --features=fix >/dev/null 2>&1
+.PHONY: build
+build: $(CARGO_HOME)/bin/cargo
+	@printf '%s\n' "Building using the dev profile..."
+	@cargo build
 
 .PHONY: release
 release: $(CARGO_HOME)/bin/cargo-auditable
@@ -55,11 +51,6 @@ release: $(CARGO_HOME)/bin/cargo-auditable
 $(CARGO_HOME)/bin/cargo-auditable: $(CARGO_HOME)/bin/cargo
 	@printf '%s\n' "Installing cargo-auditable to produce auditable binaries..."
 	@cargo install cargo-auditable --version $(cargo_auditable_version) --locked >/dev/null 2>&1
-
-.PHONY: build
-build: $(CARGO_HOME)/bin/cargo
-	@printf '%s\n' "Building using the dev profile..."
-	@cargo build
 
 .PHONY: run
 run: $(CARGO_HOME)/bin/cargo
@@ -72,19 +63,38 @@ test: $(CARGO_HOME)/bin/cargo
 	@cargo test
 
 .PHONY: lint
-lint: $(CARGO_HOME)/bin/cargo 
-	@printf '%s\n' "Linting with Clippy..."
-	@cargo clippy --all-targets --all-features -- -D warnings
-	@printf '\n%s\n' "Linting code style with rustfmt..."
+lint: $(CARGO_HOME)/bin/cargo
+	@printf '%s\n' "Linting code style with rustfmt..."
 	@cargo fmt --check
+	@printf '%s\n' "Linting code with Clippy..."
+	@cargo clippy --all-targets --all-features -- -D warnings
+
+.PHONY: check
+check: $(CARGO_HOME)/bin/cargo
+	@printf '%s\n' "Checking code for errors..."
+	@cargo check
 
 .PHONY: format
-format: $(CARGO_HOME)/bin/cargo 
+format: $(CARGO_HOME)/bin/cargo
 	@printf '%s\n' "Formatting all files..."
 	@cargo fmt
 
+.PHONY: docs
+docs: $(CARGO_HOME)/bin/cargo
+	@printf '%s\n' "Generating and opening docs..."
+	@cargo doc --open
+
+.PHONY: audit
+audit: release $(CARGO_HOME)/bin/cargo-audit
+	@printf '%s\n' "Scanning the release binary for vulnerabilities..."
+	@cargo audit bin target/release/$(project_name)
+
+$(CARGO_HOME)/bin/cargo-audit: $(CARGO_HOME)/bin/cargo
+	@printf '%s\n' "Installing cargo-audit to scan source and binaries for security vulnerabilities..."
+	@cargo install cargo-audit --version $(cargo_audit_version) --locked --features=fix >/dev/null 2>&1
+
 .PHONY: update
-update: $(CARGO_HOME)/bin/cargo 
+update: $(CARGO_HOME)/bin/cargo
 	@printf '%s\n' "Updating dependencies as recorded in the local lock file..."
 	@cargo update
 
