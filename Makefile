@@ -130,8 +130,3 @@ clean:
 	@rm -rf $(BIN)
 	@printf '%s\n' "Removing the $(PWD)/.local directory..."
 	@if [ -d "$(PWD)/.local" ]; then rmdir "$(PWD)/.local"; fi
-
-.PHONY: debug
-debug:
-	@printf '%s\n' "$(ARGS)"
-	@set -- "$(ARGS)" && printf '%s\n' "$$1"
