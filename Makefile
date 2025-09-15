@@ -54,8 +54,11 @@ $(CARGO_HOME)/bin/cargo-auditable: $(CARGO_HOME)/bin/cargo
 
 .PHONY: run
 run: $(CARGO_HOME)/bin/cargo
-	@printf '%s\n' "Building using the dev profile and running..."
-	@cargo run
+	@printf '%s\n'   "Building using the dev profile and running..."
+	@printf '%s\n'   "--> This Make target passes any arguments listed in the ARGS"
+	@printf '%s\n'   "--> variable to the program being run by Cargo like:"
+	@printf '%s\n\n' '--> make run ARGS="arg1 arg2 etc"'
+	@set -- $(ARGS) && cargo run -- "$$@"
 
 .PHONY: test
 test: $(CARGO_HOME)/bin/cargo
@@ -127,3 +130,8 @@ clean:
 	@rm -rf $(BIN)
 	@printf '%s\n' "Removing the $(PWD)/.local directory..."
 	@if [ -d "$(PWD)/.local" ]; then rmdir "$(PWD)/.local"; fi
+
+.PHONY: debug
+debug:
+	@printf '%s\n' "$(ARGS)"
+	@set -- "$(ARGS)" && printf '%s\n' "$$1"
