@@ -25,4 +25,4 @@ rules:
     level: error
     quote-type: single
     required: only-when-needed
-  line-length: disable
+  line-length: 80
