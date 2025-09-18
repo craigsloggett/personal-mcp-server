@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 use std::io::{self, BufRead, Write};
 use std::sync::mpsc::{Receiver, Sender};
 
-use crate::transport::{McpMessage, Transport, TransportHandle};
+use super::{McpMessage, Transport, TransportHandle};
 
 pub struct StdioConfig {
     // SPEC: The server MAY write UTF-8 strings to its standard error (stderr)
@@ -32,36 +32,52 @@ impl StdioTransport {
     }
 
     // A writer can be any type that implements the Write trait.
-    pub fn write_message(mut writer: &impl Write, msg: &str) -> io::Result<()> {
-        let _ = (&mut writer, msg); // TODO: Placeholder to avoid warnings when compiling.
-        unimplemented!()
+    pub fn write_message(writer: &mut impl Write, msg: &str) -> io::Result<()> {
+        validate_message(msg)?;
+        writer.write_all(msg.as_bytes())?;
+        writer.write_all(b"\n")?;
+        writer.flush()
     }
 
     // A reader can be any type that implements the BufRead trait. By borrowing the reader we can
     // use the same reader across calls (enabling the ability to read partially read messages).
-    pub fn read_message(reader: &mut impl BufRead) -> io::Result<McpMessage> {
-        let _ = reader; // TODO: Placeholder to avoid warnings when compiling.
+    pub fn read_message(reader: &mut impl BufRead) -> io::Result<Option<McpMessage>> {
+        let mut line = String::new();
+        let n = reader.read_line(&mut line)?;
+        if n == 0 {
+            return Ok(None);
+        }
 
-        let line = String::new(); // TODO: Placeholder to avoid warnings when compiling.
-        let _ = validate_message(&line); // TODO: Placeholder to avoid warnings when compiling.
+        if line.ends_with('\n') {
+            line.pop();
+            if line.ends_with('\r') {
+                line.pop();
+            }
+        }
 
-        unimplemented!()
+        validate_message(&line)?;
+        Ok(Some(line))
     }
 
     // This loop uses (and owns) a reader that can be any type that implements the BufRead trait.
     // All messages read by the reader from stdin are sent to the queue using a Sender that sends
     // messages of type McpMessage.
-    pub fn reader_loop<R: BufRead>(mut reader: R, tx: Sender<McpMessage>) -> io::Result<()> {
-        let _ = (&mut reader, tx); // TODO: Placeholder to avoid warnings when compiling.
-        unimplemented!()
+    pub fn reader_loop(reader: &mut impl BufRead, tx: &Sender<McpMessage>) -> io::Result<()> {
+        while let Some(msg) = Self::read_message(reader)? {
+            // If the receiver side is gone, surface BrokenPipe as an I/O error
+            tx.send(msg).map_err(|e| io::Error::new(io::ErrorKind::BrokenPipe, e.to_string()))?;
+        }
+        Ok(())
     }
 
     // This loop uses a writer that can be any type that implements the Write trait. Messages are
     // read from the queue using a Receiver that can read messages of type McpMessage. They are
     // then written to stdout by the writer.
-    pub fn writer_loop<W: Write>(mut writer: W, rx: Receiver<McpMessage>) -> io::Result<()> {
-        let _ = (&mut writer, rx); // TODO: Placeholder to avoid warnings when compiling.
-        unimplemented!()
+    pub fn writer_loop(writer: &mut impl Write, rx: &Receiver<McpMessage>) -> io::Result<()> {
+        while let Ok(msg) = rx.recv() {
+            Self::write_message(writer, &msg)?; // validates and frames
+        }
+        Ok(())
     }
 }
 

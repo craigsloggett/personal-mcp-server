@@ -10,6 +10,7 @@ pub struct TransportHandle {
     outgoing: Sender<McpMessage>,
 }
 
+// Don't expose the `mpsc` interface directly.
 impl TransportHandle {
     pub fn recv(&self) -> Result<McpMessage, std::sync::mpsc::RecvError> {
         self.incoming.recv()
