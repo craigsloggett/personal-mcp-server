@@ -68,7 +68,7 @@ test: $(CARGO_HOME)/bin/cargo
 .PHONY: lint
 lint: $(CARGO_HOME)/bin/cargo
 	@printf '%s\n' "Linting code style with rustfmt..."
-	@cargo fmt --check
+	@cargo +nightly fmt --check
 	@printf '%s\n' "Linting code with Clippy..."
 	@cargo clippy --all-targets --all-features -- -D warnings
 
@@ -80,7 +80,7 @@ check: $(CARGO_HOME)/bin/cargo
 .PHONY: format
 format: $(CARGO_HOME)/bin/cargo
 	@printf '%s\n' "Formatting all files..."
-	@cargo fmt
+	@cargo +nightly fmt
 
 .PHONY: docs
 docs: $(CARGO_HOME)/bin/cargo
