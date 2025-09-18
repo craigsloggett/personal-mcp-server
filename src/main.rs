@@ -1,18 +1,20 @@
-use personal_mcp_server::ServerConfig;
+use personal_mcp_server::StdioTransport;
 
-fn run(config: ServerConfig) -> Result<(), Box<dyn std::error::Error>> {
-    println!("{}", config.program_name());
-    println!("{}", config.config_home());
+fn run() -> Result<(), Box<dyn std::error::Error>> {
+    let stdout = std::io::stdout();
+    let mut out = stdout.lock();
+    StdioTransport::write_message(&mut out, r#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#)?;
+
+    let stdin = std::io::stdin();
+    let mut input = stdin.lock();
+    if let Some(msg) = StdioTransport::read_message(&mut input)? {
+        eprintln!("read valid message: {}", msg); // stderr logging
+    }
     Ok(())
 }
 
 fn main() {
-    let config = ServerConfig::build().unwrap_or_else(|e| {
-        eprintln!("Problem parsing arguments: {e}");
-        std::process::exit(2);
-    });
-
-    if let Err(e) = run(config) {
+    if let Err(e) = run() {
         eprintln!("Application error: {e}");
         std::process::exit(1);
     }
