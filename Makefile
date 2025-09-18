@@ -33,7 +33,7 @@ target_triple      := $(arch)-$(vendor)-$(os)
 rustup_package_url := https://static.rust-lang.org/rustup/archive/$(rustup_version)/$(target_triple)/rustup-init
 
 .PHONY: all
-all: format lint release test audit
+all: format lint update audit release test audit-release
 
 .PHONY: tools
 tools: $(CARGO_HOME)/bin/cargo $(CARGO_HOME)/bin/cargo-audit $(CARGO_HOME)/bin/cargo-auditable
@@ -88,7 +88,12 @@ docs: $(CARGO_HOME)/bin/cargo
 	@cargo doc --open
 
 .PHONY: audit
-audit: release $(CARGO_HOME)/bin/cargo-audit
+audit: $(CARGO_HOME)/bin/cargo-audit
+	@printf '%s\n' "Scanning crate dependencies for vulnerabilities..."
+	@cargo audit
+
+.PHONY: audit-release
+audit-release: release $(CARGO_HOME)/bin/cargo-audit
 	@printf '%s\n' "Scanning the release binary for vulnerabilities..."
 	@cargo audit bin target/release/$(project_name)
 
