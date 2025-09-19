@@ -1,8 +1,8 @@
 use personal_mcp_server::{ServerConfig, StdioTransport, Transport};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let config = ServerConfig::new();
-    config.validate()?;
+    // No real configuration implemented yet.
+    let _config = ServerConfig::new();
 
     let mut transport = StdioTransport::new();
 
