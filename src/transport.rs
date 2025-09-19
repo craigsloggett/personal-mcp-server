@@ -1,32 +1,11 @@
-use std::sync::mpsc::{Receiver, Sender};
+pub mod error;
+pub mod stdio;
 
-// TODO: The String type will ultimately be swapped out with a struct
-//       (validated JSON).
-pub(crate) type McpMessage = String;
-
-// Bind the two channel endpoints. Directions are relative to the server.
-pub struct TransportHandle {
-    incoming: Receiver<McpMessage>,
-    outgoing: Sender<McpMessage>,
-}
-
-// Don't expose the `mpsc` interface directly.
-impl TransportHandle {
-    pub fn recv(&self) -> Result<McpMessage, std::sync::mpsc::RecvError> {
-        self.incoming.recv()
-    }
-
-    pub fn try_recv(&self) -> Result<McpMessage, std::sync::mpsc::TryRecvError> {
-        self.incoming.try_recv()
-    }
-
-    pub fn send(&self, msg: McpMessage) -> Result<(), std::sync::mpsc::SendError<McpMessage>> {
-        self.outgoing.send(msg)
-    }
-}
+pub use error::{TransportError, TransportResult};
+pub use stdio::StdioTransport;
 
 pub trait Transport {
-    fn start(self) -> std::io::Result<TransportHandle>;
+    fn send_message(&mut self, message: &str) -> TransportResult<()>;
+    fn receive_message(&mut self) -> TransportResult<String>;
+    fn close(&mut self) -> TransportResult<()>;
 }
-
-pub mod stdio;
