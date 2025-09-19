@@ -1,21 +1,34 @@
-use personal_mcp_server::StdioTransport;
+use personal_mcp_server::{ServerConfig, StdioTransport, Transport};
 
-fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let stdout = std::io::stdout();
-    let mut out = stdout.lock();
-    StdioTransport::write_message(&mut out, r#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#)?;
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let config = ServerConfig::new();
+    config.validate()?;
 
-    let stdin = std::io::stdin();
-    let mut input = stdin.lock();
-    if let Some(msg) = StdioTransport::read_message(&mut input)? {
-        eprintln!("read valid message: {}", msg); // stderr logging
+    let mut transport = StdioTransport::new();
+
+    println!("MCP Server started. Type 'quit' to exit.");
+
+    loop {
+        print!(">> ");
+        match transport.receive_message() {
+            Ok(message) => {
+                if message.trim() == "quit" {
+                    println!("Goodbye!");
+                    break;
+                }
+
+                let response = format!("Echo: {}", message);
+                if let Err(e) = transport.send_message(&response) {
+                    eprintln!("Failed to send response: {}", e);
+                }
+            }
+            Err(e) => {
+                eprintln!("Error reading message: {}", e);
+                // You might want to break here depending on the error type
+            }
+        }
     }
+
+    transport.close()?;
     Ok(())
-}
-
-fn main() {
-    if let Err(e) = run() {
-        eprintln!("Application error: {e}");
-        std::process::exit(1);
-    }
 }

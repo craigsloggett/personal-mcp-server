@@ -1,5 +1,4 @@
-max_width = 120
-use_small_heuristics = "max"
+max_width = 80
 reorder_imports = true
 group_imports = "StdExternalCrate" # Unstable
 imports_granularity = "Module" # Unstable
