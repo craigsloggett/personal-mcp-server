@@ -1,5 +1,5 @@
-pub mod error;
-pub mod stdio;
+mod error;
+mod stdio;
 
 pub use error::{TransportError, TransportResult};
 pub use stdio::StdioTransport;
