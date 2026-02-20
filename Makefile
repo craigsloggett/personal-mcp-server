@@ -10,7 +10,7 @@ project_name := personal-mcp-server
 
 # Versions
 rustup_version          := 1.28.2
-cargo_audit_version     := 0.21.2
+cargo_audit_version     := 0.22.0
 cargo_auditable_version := 0.7.0
 
 # Architecture, Vendor, and Operating System
@@ -117,7 +117,7 @@ $(BIN)/rustup-init:
 	@mkdir -p $(RUSTUP_HOME)
 	@curl --silent --show-error --fail --create-dirs --output-dir $(BIN) -O -L $(rustup_package_url)
 	@curl --silent --show-error --fail --create-dirs --output-dir $(BIN) -O -L $(rustup_package_url).sha256
-	@cd $(BIN) && shasum -a 256 -c $(BIN)/rustup-init.sha256 >/dev/null 
+	@cd $(BIN) && shasum -a 256 -c $(BIN)/rustup-init.sha256 >/dev/null
 	@chmod +x $(BIN)/rustup-init
 
 .PHONY: clean
