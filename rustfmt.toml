@@ -1,4 +1,4 @@
 max_width = 80
-use_small_heuristics = "max"
-edition = "2021"
-style_edition = "2024"
+reorder_imports = true
+group_imports = "StdExternalCrate" # Unstable
+imports_granularity = "Module" # Unstable
