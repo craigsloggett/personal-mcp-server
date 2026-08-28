@@ -1,56 +1,24 @@
-use personal_mcp_server::{search, search_case_insensitive};
-use std::env;
-use std::error::Error;
-use std::fs;
-use std::process;
+use personal_mcp_server::{ServerConfig, StdioTransport, Transport};
 
-struct Config {
-    query: String,
-    file_path: String,
-    ignore_case: bool,
-}
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let _config = ServerConfig::new();
 
-impl Config {
-    fn build(args: &[String]) -> Result<Config, &'static str> {
-        if args.len() < 3 {
-            return Err("not enough arguments");
+    let mut transport = StdioTransport::new();
+
+    loop {
+        match transport.receive_message() {
+            Ok(message) => {
+                if let Err(e) = transport.send_message(&message.to_string()) {
+                    eprintln!("Failed to send response: {}", e);
+                }
+            }
+            Err(e) => {
+                eprintln!("Error reading message: {}", e);
+                break;
+            }
         }
-
-        let query = args[1].clone();
-        let file_path = args[2].clone();
-
-        let ignore_case = env::var("IGNORE_CASE").is_ok();
-
-        Ok(Config { query, file_path, ignore_case })
-    }
-}
-
-fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    let contents = fs::read_to_string(config.file_path)?;
-
-    let results = if config.ignore_case {
-        search_case_insensitive(&config.query, &contents)
-    } else {
-        search(&config.query, &contents)
-    };
-
-    for line in results {
-        println!("{line}");
     }
 
+    transport.close()?;
     Ok(())
-}
-
-fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    let config = Config::build(&args).unwrap_or_else(|err| {
-        eprintln!("Problem parsing arguments: {err}");
-        process::exit(1);
-    });
-
-    if let Err(e) = run(config) {
-        eprintln!("Application error: {e}");
-        process::exit(1);
-    }
 }
